@@ -9,6 +9,7 @@ fun main() {
     runBlocking {
         val server = aSocket(ActorSelectorManager(this.coroutineContext)).tcp().bind(InetSocketAddress("0.0.0.0", 2323))
         println("Started echo telnet server at ${server.localAddress}")
+        Test.start()
 
         while (true) {
             println("HERE")
