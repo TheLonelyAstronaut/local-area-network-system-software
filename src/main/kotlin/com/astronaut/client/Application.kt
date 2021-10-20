@@ -15,38 +15,33 @@ val CHUNK_SIZE = 1024
 
 fun main() {
     runBlocking {
-        val address = InetSocketAddress("0.0.0.0", 2323);
-        val local = InetSocketAddress("0.0.0.0", 2525);
+        val address = InetSocketAddress("192.168.31.143", 2323);
+        val local = InetSocketAddress("0.0.0.0", 2528);
 
         val socket =
             aSocket(ActorSelectorManager(coroutineContext))
-                .tcp()
+                .udp()
                 .connect(
                     remoteAddress = address,
-                    // localAddress = local,
-                    configure = {
-                        this.reusePort = true
-                    }
+                    localAddress = local,
                 )
 
 
-        val channel = socket.openReadChannel()
+        /*val channel = socket.openReadChannel()
         val channel2 = socket.openWriteChannel(autoFlush = true)
 
         while (true) {
             print("Enter file name: ")
             val line = readLine() ?: ""
 
-            //socket.send(Datagram(ByteReadPacket(line.encodeToByteArray()), address))
-            //print(socket.incoming.receive().packet.readText())
             channel2.writeAvailable("DOWNLOAD $line\r\n".encodeToByteArray())
 
             writeToFile(line) {
                 channel.readAvailable(it)
             }
-        }
+        }*/
 
-        /*while (true) {
+        while (true) {
             print("Enter file name: ")
             val line = readLine() ?: ""
             val byteArray = ByteArray(CHUNK_SIZE)
@@ -56,7 +51,7 @@ fun main() {
             writeToFile(line) {
                 socket.receive().packet.readAvailable(it)
             }
-        }*/
+        }
     }
 }
 
@@ -80,11 +75,13 @@ suspend fun writeToFile(name: String, receiveChunk: suspend (ByteArray) -> Int) 
 
             if(actualSize != CHUNK_SIZE) {
                 actualSize = -1
+            } else if(commonSize > 2000) {
+                break;
             }
         }
     } while (actualSize != -1)
 
-    println(Date().time - start)
+    println(commonSize)
 
     outputStream.close()
 }
