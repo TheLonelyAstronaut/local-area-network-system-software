@@ -5,8 +5,13 @@ import io.ktor.network.sockets.*
 import io.ktor.util.network.*
 import io.ktor.utils.io.*
 import io.ktor.utils.io.core.*
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
+import java.io.FileOutputStream
 import java.net.InetSocketAddress
+import java.util.*
+
+val CHUNK_SIZE = 1024
 
 fun main() {
     runBlocking {
@@ -29,31 +34,57 @@ fun main() {
         val channel2 = socket.openWriteChannel(autoFlush = true)
 
         while (true) {
+            print("Enter file name: ")
             val line = readLine() ?: ""
 
             //socket.send(Datagram(ByteReadPacket(line.encodeToByteArray()), address))
             //print(socket.incoming.receive().packet.readText())
-            channel2.writeAvailable("$line\r\n".encodeToByteArray())
+            channel2.writeAvailable("DOWNLOAD $line\r\n".encodeToByteArray())
 
-            //println(line)
-
-            println(channel.readUTF8Line(Int.MAX_VALUE))
-            println(channel.readUTF8Line(Int.MAX_VALUE))
-            println(channel.readUTF8Line(Int.MAX_VALUE))
-            println(channel.readUTF8Line(Int.MAX_VALUE))
-            println(channel.readUTF8Line(Int.MAX_VALUE))
+            writeToFile(line) {
+                channel.readAvailable(it)
+            }
         }
 
         /*while (true) {
+            print("Enter file name: ")
             val line = readLine() ?: ""
+            val byteArray = ByteArray(CHUNK_SIZE)
 
-            socket.send(Datagram(ByteReadPacket(line.encodeToByteArray()), address))
+            socket.send(Datagram(ByteReadPacket("DOWNLOAD $line".encodeToByteArray()), address))
 
-            println(socket.incoming.receive().packet.readText())
-            println(socket.incoming.receive().packet.readText())
-            println(socket.incoming.receive().packet.readText())
-            println(socket.incoming.receive().packet.readText())
-            println(socket.incoming.receive().packet.readText())
+            writeToFile(line) {
+                socket.receive().packet.readAvailable(it)
+            }
         }*/
     }
+}
+
+suspend fun writeToFile(name: String, receiveChunk: suspend (ByteArray) -> Int) {
+    val outputStream = FileOutputStream("data/client/$name")
+
+    //println(line)
+    var actualSize: Int
+    var commonSize = 0
+    val start = Date().time
+
+    do {
+        val byteArray = ByteArray(CHUNK_SIZE)
+
+        actualSize = receiveChunk(byteArray)
+
+        if(actualSize != -1) {
+            commonSize += actualSize
+
+            outputStream.write(byteArray, 0, actualSize)
+
+            if(actualSize != CHUNK_SIZE) {
+                actualSize = -1
+            }
+        }
+    } while (actualSize != -1)
+
+    println(Date().time - start)
+
+    outputStream.close()
 }

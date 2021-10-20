@@ -10,7 +10,7 @@ class BaseControllerImpl: BaseController {
     override suspend fun resolve(socket: ClientSocket, event: Events) {
         when(event) {
             is Events.ECHO -> {
-                socket.writeString(event.data.substring(5, event.data.length))
+                socket.writeString(event.string)
             }
             is Events.TIME -> {
                 socket.writeString(SimpleDateFormat("dd/M/yyyy hh:mm:ss").format(Date()))

@@ -4,6 +4,6 @@ import com.astronaut.server.socket.ClientSocket
 import com.astronaut.server.utils.Events
 
 interface FileController {
-    fun upload(socket: ClientSocket, event: Events)
-    fun download(socket: ClientSocket, event: Events)
+    suspend fun upload(socket: ClientSocket, event: Events.UPLOAD)
+    suspend fun download(socket: ClientSocket, event: Events.DOWNLOAD)
 }

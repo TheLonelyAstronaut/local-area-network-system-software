@@ -5,7 +5,7 @@ import com.astronaut.server.utils.ServerProtocol
 fun main() {
     DIRoot.getConfigInstance().configure(
         protocol = ServerProtocol.TCP,
-        isMultithreaded = false,
+        isMultithreaded = true,
         isSynchronous = false
     )
 

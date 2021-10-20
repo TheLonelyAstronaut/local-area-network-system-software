@@ -29,13 +29,18 @@ class UDPClientSocket(
         val text = readData!!.readText()
         readData = null
 
-        return text.slice(IntRange(0, text.length - 2))
+        return text
     }
 
     override suspend fun writeString(data: String): Boolean {
         onWrite(Datagram(ByteReadPacket((data + "\r\n").encodeToByteArray()), address))
 
         return true
+    }
+
+    override suspend fun writeByteArray(data: ByteArray) {
+        //println(data.size)
+        onWrite(Datagram(ByteReadPacket(data), address))
     }
 
     override suspend fun close() {

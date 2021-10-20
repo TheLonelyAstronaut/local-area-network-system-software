@@ -25,6 +25,10 @@ class TCPClientSocket(
         }
     }
 
+    override suspend fun writeByteArray(data: ByteArray) {
+        writeChannel.writeFully(data)
+    }
+
     override suspend fun close() {
         runCatching {
             raw.close()
