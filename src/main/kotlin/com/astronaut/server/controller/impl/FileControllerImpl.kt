@@ -13,7 +13,9 @@ class FileControllerImpl(
     private val fileService: FileService
 ): FileController {
     override suspend fun upload(socket: ClientSocket, event: Events.UPLOAD) {
-        TODO("Not yet implemented")
+        fileService.writeFile("data/server/${event.filename}") {
+            socket.readByteArray(it) ?: -1
+        }
     }
 
     override suspend fun download(socket: ClientSocket, event: Events.DOWNLOAD) {
@@ -22,6 +24,7 @@ class FileControllerImpl(
                 socket.writeString(Events.buildErrorString("No such file: ${event.filename}"))
             }
             .collect {
+                //println(it.size)
                 socket.writeByteArray(it)
             }
     }

@@ -16,8 +16,14 @@ class ServerImpl(
     private val fileController: FileController
 ): Server {
     override fun start() {
-        config.appScope.launch {
-            bootstrap(this)
+        if(config.isSynchronous && !config.isMultithreaded) {
+            runBlocking {
+                bootstrap(this)
+            }
+        } else {
+            config.appScope.launch {
+                bootstrap(this)
+            }
         }
     }
 
@@ -26,20 +32,20 @@ class ServerImpl(
             val client = serverSocket.accept()
 
             if(config.isSynchronous && !config.isMultithreaded) {
-                handleConnectionSync(client, scope)
+                handleConnectionSync(client)
             } else {
-                handleConnectionAsync(client)
+                handleConnectionAsync(client, scope)
             }
         }
     }
 
-    private suspend fun handleConnectionAsync(socket: ClientSocket) {
-        config.appScope.launch(start = CoroutineStart.UNDISPATCHED) {
-            handleConnectionSync(socket, this)
+    private suspend fun handleConnectionAsync(socket: ClientSocket, scope: CoroutineScope) {
+        scope.launch(start = CoroutineStart.UNDISPATCHED) {
+            handleConnectionSync(socket)
         }
     }
 
-    private suspend fun handleConnectionSync(socket: ClientSocket, scope: CoroutineScope) {
+    private suspend fun handleConnectionSync(socket: ClientSocket) {
         try {
             while (true) {
                 val data = socket.readString()

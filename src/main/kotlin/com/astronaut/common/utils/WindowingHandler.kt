@@ -1,4 +1,4 @@
 package com.astronaut.common.utils
 
-class FileSystemProvider {
+abstract class WindowingHandler {
 }

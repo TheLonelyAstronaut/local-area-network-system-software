@@ -4,11 +4,13 @@ import com.astronaut.server.socket.ClientSocket
 import com.astronaut.server.socket.ServerSocket
 import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.CoroutineStart
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.consume
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.receiveAsFlow
 import java.net.InetSocketAddress
+import kotlin.time.Duration
+import kotlin.time.ExperimentalTime
 
 class UDPServerSocket(
     appScope: CoroutineScope,
@@ -22,15 +24,16 @@ class UDPServerSocket(
             .bind(InetSocketAddress(hostname, port))
 
     init {
-        appScope.launch(start = CoroutineStart.UNDISPATCHED) {
+        appScope.launch {
             pool.setSendDelegate {
                 socket.outgoing.send(it)
             }
 
-            while (true) {
-                val incomingPackage = socket.incoming.receive()
-
-                pool.addOrUpdateClient(incomingPackage)
+            socket.incoming.consume {
+                this.receiveAsFlow()
+                    .collect {
+                        pool.addOrUpdateClient(it)
+                    }
             }
         }
     }

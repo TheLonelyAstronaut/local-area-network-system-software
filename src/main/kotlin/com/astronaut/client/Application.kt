@@ -1,88 +1,120 @@
 package com.astronaut.client
 
+import com.astronaut.common.repository.impl.FileRepositoryImpl
 import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
 import io.ktor.util.network.*
 import io.ktor.utils.io.*
 import io.ktor.utils.io.core.*
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.runBlocking
 import java.io.FileOutputStream
 import java.net.InetSocketAddress
 import java.util.*
+import kotlin.coroutines.CoroutineContext
 
-val CHUNK_SIZE = 1024
+val repo = FileRepositoryImpl()
+
+val address = InetSocketAddress("192.168.31.143", 2323);
+val local = InetSocketAddress("0.0.0.0", 2528);
 
 fun main() {
     runBlocking {
-        val address = InetSocketAddress("192.168.31.143", 2323);
-        val local = InetSocketAddress("0.0.0.0", 2528);
+        //downloadFileWithTCP(coroutineContext)
+        downloadFileWithUDP(coroutineContext)
+        //uploadWithTCP(coroutineContext)
+        //uploadWithUDP(coroutineContext)
+    }
+}
 
-        val socket =
-            aSocket(ActorSelectorManager(coroutineContext))
-                .udp()
-                .connect(
-                    remoteAddress = address,
-                    //localAddress = local
-                )
+suspend fun downloadFileWithTCP(coroutineContext: CoroutineContext) {
+    val socket =
+        aSocket(ActorSelectorManager(coroutineContext))
+            .tcp()
+            .connect(
+                remoteAddress = address,
+            )
 
+    val readChannel = socket.openReadChannel()
+    val writeChannel = socket.openWriteChannel(autoFlush = true)
 
-        /*val channel = socket.openReadChannel()
-        val channel2 = socket.openWriteChannel(autoFlush = true)
+    while (true) {
+        print("Enter file name: ")
+        val line = readLine() ?: ""
 
-        while (true) {
-            print("Enter file name: ")
-            val line = readLine() ?: ""
+        writeChannel.writeAvailable("DOWNLOAD $line\r\n".encodeToByteArray())
 
-            channel2.writeAvailable("DOWNLOAD $line\r\n".encodeToByteArray())
-
-            writeToFile(line) {
-                channel.readAvailable(it)
-            }
-        }*/
-
-        while (true) {
-            print("Enter file name: ")
-            val line = readLine() ?: ""
-
-            socket.send(Datagram(ByteReadPacket("DOWNLOAD $line".encodeToByteArray()), address))
-
-            writeToFile(line) {
-                socket.receive().packet.readAvailable(it)
-            }
+        repo.writeFile("data/client/$line") {
+            readChannel.readAvailable(it)
         }
     }
 }
 
-suspend fun writeToFile(name: String, receiveChunk: suspend (ByteArray) -> Int) {
-    val outputStream = FileOutputStream("data/client/$name")
+suspend fun downloadFileWithUDP(coroutineContext: CoroutineContext) {
+    val socket =
+        aSocket(ActorSelectorManager(coroutineContext))
+            .udp()
+            .connect(
+                remoteAddress = address,
+                localAddress = local
+            )
 
-    //println(line)
-    var actualSize: Int
-    var commonSize = 0
-    val start = Date().time
+    while (true) {
+        print("Enter file name: ")
+        val line = readLine() ?: ""
 
-    do {
-        val byteArray = ByteArray(CHUNK_SIZE)
+        socket.send(Datagram(ByteReadPacket("DOWNLOAD $line".encodeToByteArray()), address))
 
-        val receive = Date().time
-        actualSize = receiveChunk(byteArray)
-        println("Package accepted: ${Date().time - receive}")
-
-        if(actualSize != -1) {
-            commonSize += actualSize
-
-            outputStream.write(byteArray, 0, actualSize)
-
-            if(actualSize != CHUNK_SIZE) {
-                actualSize = -1
-            } else if(commonSize > 2000) {
-                break;
-            }
+        repo.writeFile("data/client/$line") {
+            socket.receive().packet.readAvailable(it)
         }
-    } while (actualSize != -1)
+    }
+}
 
-    println(commonSize)
+suspend fun uploadWithTCP(coroutineContext: CoroutineContext) {
+    val socket =
+        aSocket(ActorSelectorManager(coroutineContext))
+            .tcp()
+            .connect(
+                remoteAddress = address,
+            )
 
-    outputStream.close()
+    val writeChannel = socket.openWriteChannel(autoFlush = true)
+
+    while (true) {
+        print("Enter file name: ")
+        val line = readLine() ?: ""
+
+        writeChannel.writeAvailable("UPLOAD $line\r\n".encodeToByteArray())
+
+        repo.readFile("data/client/$line")
+            .collect {
+                writeChannel.writeAvailable(it)
+            }
+    }
+}
+
+suspend fun uploadWithUDP(coroutineContext: CoroutineContext) {
+    val socket =
+        aSocket(ActorSelectorManager(coroutineContext))
+            .udp()
+            .connect(
+                remoteAddress = address,
+                localAddress = local
+            )
+
+    while (true) {
+        print("Enter file name: ")
+        val line = readLine() ?: ""
+
+        socket.send(Datagram(ByteReadPacket("UPLOAD $line".encodeToByteArray()), address))
+
+        repo.readFile("data/client/$line")
+            .collect {
+                //socket.send(Datagram(ByteReadPacket(it), address))
+            }
+    }
 }

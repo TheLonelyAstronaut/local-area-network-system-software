@@ -4,6 +4,7 @@ import com.astronaut.server.utils.ServerProtocol
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.asCoroutineDispatcher
 import java.util.concurrent.Executors
+import kotlin.coroutines.CoroutineContext
 
 class ServerConfig {
     var appScope: CoroutineScope = CoroutineScope(Executors.newSingleThreadExecutor().asCoroutineDispatcher())
@@ -27,7 +28,8 @@ class ServerConfig {
     fun configure(
         protocol: ServerProtocol,
         isMultithreaded: Boolean = false,
-        isSynchronous: Boolean = false
+        isSynchronous: Boolean = false,
+        coroutineScope: CoroutineScope? = null
     ) {
         serverProtocol = protocol
         this.isSynchronous = isSynchronous
@@ -35,22 +37,24 @@ class ServerConfig {
 
         when(protocol) {
             ServerProtocol.TCP -> {
-                appScope = CoroutineScope(
-                    (if(isMultithreaded)
-                        Executors.newCachedThreadPool()
-                    else
-                        Executors.newSingleThreadExecutor())
-                        .asCoroutineDispatcher()
-                )
+                appScope = coroutineScope
+                    ?: CoroutineScope(
+                        (if(isMultithreaded)
+                            Executors.newCachedThreadPool()
+                        else
+                            Executors.newSingleThreadExecutor())
+                            .asCoroutineDispatcher()
+                    )
             }
             ServerProtocol.UDP -> {
-                appScope = CoroutineScope(
-                    (if(isMultithreaded)
-                        Executors.newCachedThreadPool()
-                    else
-                        Executors.newSingleThreadExecutor())
-                        .asCoroutineDispatcher()
-                )
+                appScope = coroutineScope
+                    ?: CoroutineScope(
+                        (if(isMultithreaded)
+                            Executors.newCachedThreadPool()
+                        else
+                            Executors.newSingleThreadExecutor())
+                            .asCoroutineDispatcher()
+                    )
             }
         }
     }

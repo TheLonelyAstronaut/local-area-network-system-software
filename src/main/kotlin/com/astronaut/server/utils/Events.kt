@@ -5,7 +5,7 @@ sealed class Events {
     data class TIME(val data: String): Events()
     data class CLOSE(val data: String): Events()
     data class DOWNLOAD(val filename: String): Events()
-    data class UPLOAD(val data: String): Events()
+    data class UPLOAD(val filename: String): Events()
     data class UNKNOWN(val data: String): Events()
 
     companion object {
@@ -21,11 +21,10 @@ sealed class Events {
                     Events.CLOSE(data)
                 }
                 data.startsWith("DOWNLOAD ") -> {
-                    print(data)
                     Events.DOWNLOAD(data.substring(9, data.length))
                 }
                 data.startsWith("UPLOAD ") -> {
-                    Events.UPLOAD(data)
+                    Events.UPLOAD(data.substring(7, data.length))
                 }
                 else -> {
                     Events.UNKNOWN(data)

@@ -14,15 +14,16 @@ class TCPClientSocket(
         return readChannel.readUTF8Line(Int.MAX_VALUE)
     }
 
-    override suspend fun writeString(data: String): Boolean {
-        return try {
-            writeChannel.writeAvailable((data + "\r\n").encodeToByteArray())
-            true
-        } catch (e: Throwable) {
-            close()
+    override suspend fun readByteArray(data: ByteArray): Int? {
+        var size: Int? = readChannel.readAvailable(data)
 
-            false
-        }
+        if(size == -1) size = null
+
+        return size
+    }
+
+    override suspend fun writeString(data: String) {
+        writeChannel.writeAvailable((data + "\r\n").encodeToByteArray())
     }
 
     override suspend fun writeByteArray(data: ByteArray) {
