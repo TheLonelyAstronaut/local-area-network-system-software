@@ -25,18 +25,14 @@ class FileRepositoryImpl: FileRepository {
 
                     if(actualSize != -1) {
                         commonSize += actualSize
-                        //println("$actualSize $commonSize")
 
                         if(actualSize == CHUNK_SIZE) {
                             emit(byteArray)
                         } else {
                             emit(ByteArray(actualSize) { index ->
-                                //println(index)
                                 byteArray[index]
                             })
                         }
-
-                        //emit(byteArray)
                     }
 
                 } while (actualSize != -1)

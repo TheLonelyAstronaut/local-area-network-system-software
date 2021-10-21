@@ -20,6 +20,7 @@ class UDPClientsPool {
                 data.packet,
                 sendDelegate
             ) {
+                data.packet.close()
                 users.remove(data.address.toString())
             }
 

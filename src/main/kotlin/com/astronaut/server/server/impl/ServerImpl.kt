@@ -7,7 +7,7 @@ import com.astronaut.server.server.Server
 import com.astronaut.server.server.ServerSocketWrapper
 import com.astronaut.server.socket.ClientSocket
 import com.astronaut.server.utils.Events
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
 
 class ServerImpl(
     private val serverSocket: ServerSocketWrapper,
@@ -17,28 +17,32 @@ class ServerImpl(
 ): Server {
     override fun start() {
         config.appScope.launch {
-            while (true) {
-                val client = serverSocket.accept()
+            bootstrap(this)
+        }
+    }
 
-                if(config.isSynchronous) {
-                    launchSync(client)
-                } else {
-                    launchAsync(client)
-                }
+    private suspend fun bootstrap(scope: CoroutineScope) {
+        while (true) {
+            val client = serverSocket.accept()
+
+            if(config.isSynchronous && !config.isMultithreaded) {
+                handleConnectionSync(client, scope)
+            } else {
+                handleConnectionAsync(client)
             }
         }
     }
 
-    private suspend fun launchAsync(socket: ClientSocket) {
-        config.appScope.launch {
-            launchSync(socket)
+    private suspend fun handleConnectionAsync(socket: ClientSocket) {
+        config.appScope.launch(start = CoroutineStart.UNDISPATCHED) {
+            handleConnectionSync(socket, this)
         }
     }
 
-    private suspend fun launchSync(socket: ClientSocket) {
+    private suspend fun handleConnectionSync(socket: ClientSocket, scope: CoroutineScope) {
         try {
             while (true) {
-                val data = socket.readString();
+                val data = socket.readString()
 
                 if(data.isNullOrEmpty()) {
                     print("Connection closed")

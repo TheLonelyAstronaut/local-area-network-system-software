@@ -23,7 +23,7 @@ fun main() {
                 .udp()
                 .connect(
                     remoteAddress = address,
-                    localAddress = local,
+                    //localAddress = local
                 )
 
 
@@ -44,7 +44,6 @@ fun main() {
         while (true) {
             print("Enter file name: ")
             val line = readLine() ?: ""
-            val byteArray = ByteArray(CHUNK_SIZE)
 
             socket.send(Datagram(ByteReadPacket("DOWNLOAD $line".encodeToByteArray()), address))
 
@@ -66,7 +65,9 @@ suspend fun writeToFile(name: String, receiveChunk: suspend (ByteArray) -> Int) 
     do {
         val byteArray = ByteArray(CHUNK_SIZE)
 
+        val receive = Date().time
         actualSize = receiveChunk(byteArray)
+        println("Package accepted: ${Date().time - receive}")
 
         if(actualSize != -1) {
             commonSize += actualSize

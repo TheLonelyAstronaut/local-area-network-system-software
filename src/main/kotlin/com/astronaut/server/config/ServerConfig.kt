@@ -9,7 +9,8 @@ class ServerConfig {
     var appScope: CoroutineScope = CoroutineScope(Executors.newSingleThreadExecutor().asCoroutineDispatcher())
         private set
 
-    var udpSenderScope: CoroutineScope = appScope
+    var isMultithreaded: Boolean = false
+        private set
 
     var serverProtocol: ServerProtocol = ServerProtocol.TCP
         private set
@@ -30,6 +31,7 @@ class ServerConfig {
     ) {
         serverProtocol = protocol
         this.isSynchronous = isSynchronous
+        this.isMultithreaded = isMultithreaded
 
         when(protocol) {
             ServerProtocol.TCP -> {
@@ -49,12 +51,6 @@ class ServerConfig {
                         Executors.newSingleThreadExecutor())
                         .asCoroutineDispatcher()
                 )
-
-                udpSenderScope =
-                    if (isMultithreaded)
-                        appScope
-                    else
-                        CoroutineScope(Executors.newCachedThreadPool().asCoroutineDispatcher())
             }
         }
     }

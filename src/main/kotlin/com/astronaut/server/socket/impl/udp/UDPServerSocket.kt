@@ -5,15 +5,13 @@ import com.astronaut.server.socket.ServerSocket
 import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import java.net.InetSocketAddress
 
 class UDPServerSocket(
     appScope: CoroutineScope,
-    // Just because Ktor itself has a strange lock inside,
-    // in single thread it looks like blocking operation
-    // with package send waiting, but in UDP we dont need to track it
-    senderScope: CoroutineScope,
     private val pool: UDPClientsPool,
     hostname: String,
     port: Int
@@ -21,16 +19,12 @@ class UDPServerSocket(
     private val socket: BoundDatagramSocket =
         aSocket(ActorSelectorManager(appScope.coroutineContext))
             .udp()
-            .bind(InetSocketAddress(hostname, port)) {
-                this.reusePort = true
-            }
+            .bind(InetSocketAddress(hostname, port))
 
     init {
-        appScope.launch {
+        appScope.launch(start = CoroutineStart.UNDISPATCHED) {
             pool.setSendDelegate {
-                senderScope.launch {
-                    socket.outgoing.send(it)
-                }
+                socket.outgoing.send(it)
             }
 
             while (true) {
