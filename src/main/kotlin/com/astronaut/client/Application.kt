@@ -13,7 +13,6 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.runBlocking
 import java.io.FileOutputStream
 import java.net.InetSocketAddress
-import java.util.*
 import kotlin.coroutines.CoroutineContext
 
 val repo = FileRepositoryImpl()
@@ -23,8 +22,8 @@ val local = InetSocketAddress("0.0.0.0", 2528);
 
 fun main() {
     runBlocking {
-        //downloadFileWithTCP(coroutineContext)
-        downloadFileWithUDP(coroutineContext)
+        downloadFileWithTCP(coroutineContext)
+        //downloadFileWithUDP(coroutineContext)
         //uploadWithTCP(coroutineContext)
         //uploadWithUDP(coroutineContext)
     }

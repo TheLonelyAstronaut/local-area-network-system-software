@@ -6,7 +6,9 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.util.*
 
-const val CHUNK_SIZE = 8192
+const val CHUNK_SIZE = 1024
+const val DELIMITER = "END"
+val DELIMITER_ENCODED = DELIMITER.encodeToByteArray()
 
 class FileRepositoryImpl: FileRepository {
     override suspend fun writeFile(path: String, receiveChunk: suspend (ByteArray) -> Int) {
@@ -21,15 +23,20 @@ class FileRepositoryImpl: FileRepository {
             val byteArray = ByteArray(CHUNK_SIZE)
 
             actualSize = receiveChunk(byteArray)
-            //println(actualSize)
+
 
             if(actualSize != -1) {
                 commonSize += actualSize
 
-                outputStream.write(byteArray, 0, actualSize)
+                byteArray.apply {
+                    val end = this.copyOfRange(actualSize - DELIMITER_ENCODED.size, actualSize)
+                    val suffix = String(end)
 
-                if(actualSize != CHUNK_SIZE) {
-                    actualSize = -1
+                    if (suffix == DELIMITER) {
+                        println("END OF TRANSMISSION!")
+                    }
+
+                    outputStream.write(this, 0, actualSize)
                 }
             }
         } while (actualSize != -1)
@@ -62,6 +69,8 @@ class FileRepositoryImpl: FileRepository {
                     }
 
                 } while (actualSize != -1)
+
+                emit(DELIMITER_ENCODED)
             }
         }
 }
