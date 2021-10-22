@@ -6,7 +6,7 @@ import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.util.*
 
-const val CHUNK_SIZE = 1024
+const val CHUNK_SIZE = 8192
 const val DELIMITER = "END"
 val DELIMITER_ENCODED = DELIMITER.encodeToByteArray()
 
@@ -27,6 +27,8 @@ class FileRepositoryImpl: FileRepository {
 
             if(actualSize != -1) {
                 commonSize += actualSize
+
+                //println(commonSize)
 
                 byteArray.apply {
                     val end = this.copyOfRange(actualSize - DELIMITER_ENCODED.size, actualSize)

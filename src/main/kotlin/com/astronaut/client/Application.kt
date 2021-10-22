@@ -22,8 +22,8 @@ val local = InetSocketAddress("0.0.0.0", 2528);
 
 fun main() {
     runBlocking {
-        downloadFileWithTCP(coroutineContext)
-        //downloadFileWithUDP(coroutineContext)
+        //downloadFileWithTCP(coroutineContext)
+        downloadFileWithUDP(coroutineContext)
         //uploadWithTCP(coroutineContext)
         //uploadWithUDP(coroutineContext)
     }
