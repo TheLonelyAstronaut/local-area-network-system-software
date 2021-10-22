@@ -33,10 +33,16 @@ class FileRepositoryImpl: FileRepository {
                     val suffix = String(end)
 
                     if (suffix == DELIMITER) {
-                        println("END OF TRANSMISSION!")
-                    }
+                        outputStream.write(
+                            this.copyOfRange(0, actualSize - DELIMITER_ENCODED.size),
+                            0,
+                            actualSize - DELIMITER_ENCODED.size
+                        )
 
-                    outputStream.write(this, 0, actualSize)
+                        actualSize = -1
+                    } else {
+                        outputStream.write(this, 0, actualSize)
+                    }
                 }
             }
         } while (actualSize != -1)
