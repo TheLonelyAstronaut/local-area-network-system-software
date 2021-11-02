@@ -13,12 +13,12 @@ val socketModule = DI.Module("Socket") {
     import(tcpSocketModule)
     import(udpSocketModule)
 
-    bind<ServerSocket>() with singleton {
+    /*bind<ServerSocket>() with singleton {
         val config = instance<ServerConfig>()
 
         when(config.serverProtocol) {
             ServerProtocol.TCP -> instance<TCPServerSocket>()
             ServerProtocol.UDP -> instance<UDPServerSocket>()
         }
-    }
+    }*/
 }

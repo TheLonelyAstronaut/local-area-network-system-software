@@ -31,7 +31,7 @@ class UDPClientsPool {
     @OptIn(ExperimentalTime::class)
     suspend fun getNewClient(): UDPClientSocket {
         while (newUsers.isEmpty()) {
-            delay(Duration.nanoseconds(1))
+            delay(Duration.Companion.nanoseconds(1))
         }
 
         val user = newUsers.keys.elementAt(0);

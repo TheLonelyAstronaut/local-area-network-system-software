@@ -16,9 +16,9 @@ import java.net.InetSocketAddress
 fun main() {
     //val config = DIRoot.getConfigInstance()
     DIRoot.getConfigInstance().configure(
-        protocol = ServerProtocol.UDP,
+        //protocol = ServerProtocol.UDP,
         isMultithreaded = false,
-        isSynchronous = true,
+        isSynchronous = false,
     )
 
     DIRoot.getServerInstance().start()

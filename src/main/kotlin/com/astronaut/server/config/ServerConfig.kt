@@ -13,20 +13,23 @@ class ServerConfig {
     var isMultithreaded: Boolean = false
         private set
 
-    var serverProtocol: ServerProtocol = ServerProtocol.TCP
+    var serverProtocol: ServerProtocol? = ServerProtocol.TCP
         private set
 
     var hostname: String = "0.0.0.0"
         private set
 
-    var port: Int = 2323
+    var tcpPort: Int = 2323
+        private set
+
+    var udpPort: Int = 2324
         private set
 
     var isSynchronous: Boolean = false
         private set
 
     fun configure(
-        protocol: ServerProtocol,
+        protocol: ServerProtocol? = null,
         isMultithreaded: Boolean = false,
         isSynchronous: Boolean = false,
         coroutineScope: CoroutineScope? = null
@@ -35,27 +38,13 @@ class ServerConfig {
         this.isSynchronous = isSynchronous
         this.isMultithreaded = isMultithreaded
 
-        when(protocol) {
-            ServerProtocol.TCP -> {
-                appScope = coroutineScope
-                    ?: CoroutineScope(
-                        (if(isMultithreaded)
-                            Executors.newCachedThreadPool()
-                        else
-                            Executors.newSingleThreadExecutor())
-                            .asCoroutineDispatcher()
-                    )
-            }
-            ServerProtocol.UDP -> {
-                appScope = coroutineScope
-                    ?: CoroutineScope(
-                        (if(isMultithreaded)
-                            Executors.newCachedThreadPool()
-                        else
-                            Executors.newSingleThreadExecutor())
-                            .asCoroutineDispatcher()
-                    )
-            }
-        }
+        appScope = coroutineScope
+            ?: CoroutineScope(
+                (if(isMultithreaded)
+                    Executors.newCachedThreadPool()
+                else
+                    Executors.newSingleThreadExecutor())
+                    .asCoroutineDispatcher()
+            )
     }
 }

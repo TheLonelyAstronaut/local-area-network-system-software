@@ -10,24 +10,38 @@ import com.astronaut.server.utils.Events
 import kotlinx.coroutines.*
 
 class ServerImpl(
-    private val serverSocket: ServerSocketWrapper,
+    private val tcpSocket: ServerSocketWrapper?,
+    private val udpSocket: ServerSocketWrapper?,
     private val config: ServerConfig,
     private val baseController: BaseController,
     private val fileController: FileController
 ): Server {
+    init {
+        println(tcpSocket)
+        println(udpSocket)
+    }
+
     override fun start() {
-        if(config.isSynchronous && !config.isMultithreaded) {
+        if(config.isSynchronous && !config.isMultithreaded) { // Single-thread sync
             runBlocking {
-                bootstrap(this)
+                bootstrap(tcpSocket ?: udpSocket!! , this)
             }
-        } else {
+        } else if(!config.isSynchronous && !config.isMultithreaded) { // Single-thread async
             config.appScope.launch {
-                bootstrap(this)
+                bootstrap(tcpSocket!!,this)
+            }
+
+            config.appScope.launch {
+                bootstrap(udpSocket!!,this)
+            }
+        } else { // Multi-thread
+            config.appScope.launch {
+                bootstrap(tcpSocket!!,this)
             }
         }
     }
 
-    private suspend fun bootstrap(scope: CoroutineScope) {
+    private suspend fun bootstrap(serverSocket: ServerSocketWrapper, scope: CoroutineScope) {
         while (true) {
             val client = serverSocket.accept()
 
