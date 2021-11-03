@@ -21,7 +21,7 @@ class UDPClientSocket(
 
     private var isActive: Boolean = true
     private val mutex = Mutex()
-    private var isTimeoutEnabled = false
+    private var isTimeoutEnabled = true
 
     private suspend fun waitBeforeRead() {
         try {

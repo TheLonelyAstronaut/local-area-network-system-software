@@ -61,7 +61,15 @@ abstract class WindowingHandler {
     }
 
     private suspend fun sendRetry(id: Long) {
+        println("RETRY $id")
         pureSend(Events.RETRY(id).toString().encodeToByteArray(), id)
+    }
+
+    private fun flushAllBuffers() {
+        lastReadPackage = -1
+        withoutApprovalCount = 0
+        inputBuffer.clear()
+        outputBuffer.clear()
     }
 
     private suspend fun checkForRetryOrApprove(id: Long, data: ByteArray): Boolean {
@@ -146,11 +154,9 @@ abstract class WindowingHandler {
         }
 
         while(!wasReceived) {
-            //println("TRYING TO GET ${lastReadPackage + 1} package")
+            println("TRYING TO GET ${lastReadPackage + 1} package")
             val packet = receiveByteReadPacket()
             val byteArray = parseByteReadPacket(packet)
-
-            //println("RECEIVED BYTE ARRAY SIZE ${byteArray.size}")
 
             if(byteArray.isEmpty()) {
                 retry()
@@ -163,6 +169,7 @@ abstract class WindowingHandler {
                 .flip()) as ByteBuffer)
                 .long
 
+            println("RECEIVED BYTE ARRAY SIZE ${byteArray.size} $receivedNumber")
 
             val data = byteArray.copyOfRange(Long.SIZE_BYTES, byteArray.size)
 
@@ -181,7 +188,7 @@ abstract class WindowingHandler {
                 }
             }
 
-            //println("PACKAGE RECEIVED $receivedNumber")
+            println("PACKAGE RECEIVED $receivedNumber")
 
             packagesReceived++
 
