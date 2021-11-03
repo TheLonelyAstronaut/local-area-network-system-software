@@ -25,9 +25,9 @@ val udpUploadContext = CoroutineScope(Executors.newSingleThreadExecutor().asCoro
 fun main() {
     runBlocking {
         //downloadFileWithTCP(coroutineContext)
-        downloadFileWithUDP(coroutineContext)
+        //downloadFileWithUDP(coroutineContext)
         //uploadWithTCP(coroutineContext)
-        //uploadWithUDP(coroutineContext)
+        uploadWithUDP(coroutineContext)
         //testWindowHandling(coroutineContext)
     }
 }
@@ -38,7 +38,6 @@ suspend fun testWindowHandling(coroutineContext: CoroutineContext) {
             .udp()
             .connect(
                 remoteAddress = udpAddress,
-                localAddress = local
             )
 
     val socketWrapper = UDPClientSocket(socket, udpAddress)
@@ -110,7 +109,6 @@ suspend fun downloadFileWithUDP(coroutineContext: CoroutineContext) {
             .udp()
             .connect(
                 remoteAddress = udpAddress,
-                localAddress = local
             )
 
     val socketWrapper = UDPClientSocket(socket, udpAddress)
@@ -218,7 +216,6 @@ suspend fun uploadWithUDP(coroutineContext: CoroutineContext) {
             .udp()
             .connect(
                 remoteAddress = udpAddress,
-                localAddress = local
             )
 
     val socketWrapper = UDPClientSocket(socket, udpAddress)
