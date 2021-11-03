@@ -139,8 +139,10 @@ suspend fun downloadFileWithUDP(coroutineContext: CoroutineContext) {
                 }
 
                 try {
-                    repo.writeFile(path, command.payload, size) {
-                        socketWrapper.receiveByteArray(it)
+                    withContext(udpUploadContext.coroutineContext) {
+                        repo.writeFile(path, command.payload, size) {
+                            socketWrapper.receiveByteArray(it)
+                        }
                     }
                 } catch (e: Throwable) {
                     e.printStackTrace()

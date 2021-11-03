@@ -146,19 +146,23 @@ abstract class WindowingHandler {
         }
 
         while(!wasReceived) {
+            //println("TRYING TO GET ${lastReadPackage + 1} package")
             val packet = receiveByteReadPacket()
             val byteArray = parseByteReadPacket(packet)
+
+            //println("RECEIVED BYTE ARRAY SIZE ${byteArray.size}")
 
             if(byteArray.isEmpty()) {
                 retry()
                 continue
             }
 
-            val receivedNumber = ByteBuffer
+            val receivedNumber = ((ByteBuffer
                 .allocate(Long.SIZE_BYTES)
                 .put(byteArray, 0, Long.SIZE_BYTES)
-                .flip()
+                .flip()) as ByteBuffer)
                 .long
+
 
             val data = byteArray.copyOfRange(Long.SIZE_BYTES, byteArray.size)
 
