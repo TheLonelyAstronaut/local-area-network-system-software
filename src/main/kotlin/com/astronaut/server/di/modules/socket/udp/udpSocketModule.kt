@@ -12,7 +12,7 @@ val udpSocketModule = DI.Module("UdpSocket") {
         val config = instance<ServerConfig>()
 
         UDPServerSocket(
-            config.appScope,
+            config.socketScope,
             instance(),
             config.hostname,
             config.udpPort

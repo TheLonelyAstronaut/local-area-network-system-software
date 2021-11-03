@@ -6,7 +6,7 @@ import com.astronaut.server.controller.FileController
 import com.astronaut.server.server.Server
 import com.astronaut.server.server.ServerSocketWrapper
 import com.astronaut.server.socket.ClientSocket
-import com.astronaut.server.utils.Events
+import com.astronaut.common.utils.Events
 import kotlinx.coroutines.*
 
 class ServerImpl(
@@ -16,23 +16,22 @@ class ServerImpl(
     private val baseController: BaseController,
     private val fileController: FileController
 ): Server {
-    init {
-        println(tcpSocket)
-        println(udpSocket)
-    }
-
     override fun start() {
         if(config.isSynchronous && !config.isMultithreaded) { // Single-thread sync
             runBlocking {
                 bootstrap(tcpSocket ?: udpSocket!! , this)
             }
         } else if(!config.isSynchronous && !config.isMultithreaded) { // Single-thread async
-            config.appScope.launch {
-                bootstrap(tcpSocket!!,this)
+            tcpSocket?.let {
+                config.appScope.launch {
+                    bootstrap(it,this)
+                }
             }
 
-            config.appScope.launch {
-                bootstrap(udpSocket!!,this)
+            udpSocket?.let {
+                config.appScope.launch {
+                    bootstrap(it,this)
+                }
             }
         } else { // Multi-thread
             config.appScope.launch {
@@ -65,7 +64,7 @@ class ServerImpl(
                 val data = socket.readString()
 
                 if(data.isNullOrEmpty()) {
-                    print("Connection closed")
+                    println("Connection closed")
 
                     break
                 }

@@ -8,6 +8,6 @@ val tcpSocketModule = DI.Module("TcpSocket") {
     bind<TCPServerSocket>() with singleton {
         val config = instance<ServerConfig>()
 
-        TCPServerSocket(config.appScope, config.hostname, config.tcpPort)
+        TCPServerSocket(config.socketScope, config.hostname, config.tcpPort)
     }
 }

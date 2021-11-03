@@ -2,7 +2,7 @@ package com.astronaut.server.controller.impl
 
 import com.astronaut.server.controller.BaseController
 import com.astronaut.server.socket.ClientSocket
-import com.astronaut.server.utils.Events
+import com.astronaut.common.utils.Events
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -10,16 +10,16 @@ class BaseControllerImpl: BaseController {
     override suspend fun resolve(socket: ClientSocket, event: Events) {
         when(event) {
             is Events.ECHO -> {
-                socket.writeString(event.string)
+                socket.writeString("${event.string}\n")
             }
             is Events.TIME -> {
-                socket.writeString(SimpleDateFormat("dd/M/yyyy hh:mm:ss").format(Date()))
+                socket.writeString("${SimpleDateFormat("dd/M/yyyy hh:mm:ss").format(Date())}\n")
             }
             is Events.CLOSE -> {
                 socket.close()
             }
             else -> {
-                socket.writeString("Unknown command $event")
+                socket.writeString("Unknown command $event\n")
             }
         }
     }

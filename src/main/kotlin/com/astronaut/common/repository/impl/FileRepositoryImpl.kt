@@ -1,21 +1,35 @@
 package com.astronaut.common.repository.impl
 
 import com.astronaut.common.repository.FileRepository
+import com.astronaut.common.utils.Chunk
+import com.astronaut.common.utils.Events
 import kotlinx.coroutines.flow.*
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.io.IOException
+import java.nio.file.Files
+import java.nio.file.Path
+import java.nio.file.Paths
 import java.util.*
 
-const val CHUNK_SIZE = 8192
-const val DELIMITER = "END"
+
+const val CHUNK_SIZE = 8096 //1024
+const val DELIMITER = Events.END.STRINGIFIED.toString()
 val DELIMITER_ENCODED = DELIMITER.encodeToByteArray()
 
 class FileRepositoryImpl: FileRepository {
-    override suspend fun writeFile(path: String, receiveChunk: suspend (ByteArray) -> Int) {
-        val outputStream = FileOutputStream(path)
+    override suspend fun writeFile(path: String,
+                                   fileSize: Long,
+                                   existingSize: Long,
+                                   receiveChunk: suspend (ByteArray) -> Int) {
+
+        val outputStream = FileOutputStream(path, existingSize.toInt() != 0)
 
         var actualSize: Int
-        var commonSize = 0
+        var commonSize: Long = 0
+        val expectedSize = (fileSize - existingSize) + CHUNK_SIZE - (fileSize - existingSize) % CHUNK_SIZE
+
+        println(expectedSize) //4497408
 
         val start = Date().time
 
@@ -24,28 +38,31 @@ class FileRepositoryImpl: FileRepository {
 
             actualSize = receiveChunk(byteArray)
 
-
             if(actualSize != -1) {
                 commonSize += actualSize
 
-                //println(commonSize)
-
                 byteArray.apply {
-                    val end = this.copyOfRange(actualSize - DELIMITER_ENCODED.size, actualSize)
-                    val suffix = String(end)
+                    if(commonSize == expectedSize) {
+                        val endIndex = ((fileSize + DELIMITER_ENCODED.size) % CHUNK_SIZE).toInt()
 
-                    if (suffix == DELIMITER) {
-                        outputStream.write(
-                            this.copyOfRange(0, actualSize - DELIMITER_ENCODED.size),
-                            0,
-                            actualSize - DELIMITER_ENCODED.size
-                        )
+                        val end = this.copyOfRange(endIndex - DELIMITER_ENCODED.size, endIndex)
+                        val suffix = String(end)
 
-                        actualSize = -1
+                        if (suffix == DELIMITER) {
+                            outputStream.write(
+                                this.copyOfRange(0, endIndex - DELIMITER_ENCODED.size),
+                                0,
+                                endIndex - DELIMITER_ENCODED.size
+                            )
+
+                            actualSize = -1
+                        }
                     } else {
                         outputStream.write(this, 0, actualSize)
                     }
                 }
+            } else {
+                println(actualSize)
             }
         } while (actualSize != -1)
 
@@ -54,8 +71,8 @@ class FileRepositoryImpl: FileRepository {
         outputStream.close()
     }
 
-    override fun readFile(path: String) =
-        flow<ByteArray> {
+    override fun readFile(path: String, offset: Long) =
+        flow<Chunk> {
             FileInputStream(path).use {
                 var actualSize = 0
                 var commonSize = 0
@@ -67,18 +84,47 @@ class FileRepositoryImpl: FileRepository {
                     if(actualSize != -1) {
                         commonSize += actualSize
 
-                        if(actualSize == CHUNK_SIZE) {
-                            emit(byteArray)
-                        } else {
-                            emit(ByteArray(actualSize) { index ->
-                                byteArray[index]
-                            })
+                        if(commonSize <= offset) {
+                            continue
                         }
+
+                        if(actualSize == CHUNK_SIZE) {
+                            emit(Chunk(byteArray, false))
+                        } else {
+                            println("Sent: ${commonSize - actualSize + CHUNK_SIZE}B")
+
+                            emit(Chunk(ByteArray(CHUNK_SIZE) { index ->
+                                if (index < actualSize) {
+                                    byteArray[index]
+                                } else {
+                                    if(index >= actualSize && index < actualSize + DELIMITER_ENCODED.size) {
+                                        DELIMITER_ENCODED[index - actualSize]
+                                    } else {
+                                        0
+                                    }
+                                }
+                            }, true))
+
+                            actualSize = -1
+                        }
+                    } else {
+                        println()
                     }
 
                 } while (actualSize != -1)
 
-                emit(DELIMITER_ENCODED)
+                //emit(DELIMITER_ENCODED)
             }
         }
+
+    override fun getFileSize(path: String): Long {
+        val internalPath: Path = Paths.get(path)
+
+        return try {
+            Files.size(internalPath)
+        } catch (e: IOException) {
+            println("No such file: $path")
+            0
+        }
+    }
 }

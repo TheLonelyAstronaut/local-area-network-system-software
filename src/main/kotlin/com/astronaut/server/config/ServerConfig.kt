@@ -7,8 +7,10 @@ import java.util.concurrent.Executors
 import kotlin.coroutines.CoroutineContext
 
 class ServerConfig {
-    var appScope: CoroutineScope = CoroutineScope(Executors.newSingleThreadExecutor().asCoroutineDispatcher())
+    lateinit var appScope: CoroutineScope
         private set
+
+    lateinit var socketScope: CoroutineScope
 
     var isMultithreaded: Boolean = false
         private set
@@ -46,5 +48,11 @@ class ServerConfig {
                     Executors.newSingleThreadExecutor())
                     .asCoroutineDispatcher()
             )
+
+        socketScope = if(!isMultithreaded && !isSynchronous) {
+            CoroutineScope(Executors.newFixedThreadPool(2).asCoroutineDispatcher())
+        } else {
+            appScope
+        }
     }
 }

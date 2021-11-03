@@ -1,5 +1,6 @@
 package com.astronaut.server.socket.impl.tcp
 
+import com.astronaut.common.repository.impl.CHUNK_SIZE
 import com.astronaut.server.socket.ClientSocket
 import io.ktor.network.sockets.*
 import io.ktor.utils.io.*
@@ -15,24 +16,32 @@ class TCPClientSocket(
     }
 
     override suspend fun readByteArray(data: ByteArray): Int? {
-        var size: Int? = readChannel.readAvailable(data)
-
-        if(size == -1) size = null
-
-        return size
+        return try {
+            readChannel.readFully(data)
+            data.size
+        } catch (e: Throwable) {
+            -1
+        }
     }
 
     override suspend fun writeString(data: String) {
-        writeChannel.writeAvailable((data + "\r\n").encodeToByteArray())
+        val bytes = (data + "\r\n").encodeToByteArray()
+        writeChannel.writeFully(bytes)
     }
 
     override suspend fun writeByteArray(data: ByteArray) {
-        writeChannel.writeFully(data)
+        if(!writeChannel.isClosedForWrite) {
+            writeChannel.writeFully(data)
+        }
     }
 
     override suspend fun close() {
         runCatching {
             raw.close()
         }
+    }
+
+    override suspend fun forceApproval() {
+        //TCP auto handle
     }
 }

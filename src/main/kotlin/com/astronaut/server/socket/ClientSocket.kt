@@ -6,4 +6,5 @@ interface ClientSocket {
     suspend fun writeString(data: String)
     suspend fun writeByteArray(data: ByteArray)
     suspend fun close()
+    suspend fun forceApproval()
 }
