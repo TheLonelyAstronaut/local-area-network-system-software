@@ -23,7 +23,6 @@ val local = InetSocketAddress("0.0.0.0", 2828);
 val udpUploadContext = CoroutineScope(Executors.newSingleThreadExecutor().asCoroutineDispatcher())
 
 fun main() {
-    //downloadFileWithUDP()
    runBlocking {
         //downloadFileWithTCP(coroutineContext)
         //downloadFileWithUDP(coroutineContext)
@@ -32,40 +31,6 @@ fun main() {
         //testWindowHandling(coroutineContext)
    }
 }
-
- /*fun downloadFileWithUDP() {
-    val socket = UDPSocket(mtuBytes = CHUNK_SIZE,
-        windowSizeBytes = CHUNK_SIZE * 100,
-        congestionControlTimeoutMs = 1,
-    )
-    socket.bind(local)
-    val context = Executors.newCachedThreadPool().asCoroutineDispatcher()
-
-    CoroutineScope(context).launch {
-        launch { socket.runSuspending() }
-
-        while (true) {
-            print("Enter file name: ")
-            val line = readLine() ?: ""
-            val path = "data/client/$line"
-            val size = repo.getFileSize(path)
-
-            socket.send(Events.DOWNLOAD(line, size).toString().toByteArray(), udpAddress)
-            val ok = socket.receive().data.toByteArray().getUnifiedString().toEvent()
-
-            if(ok is Events.OK) {
-                repo.writeFile(path, ok.payload, size) {
-                    val data = socket.receive().data.toByteArray()
-                    data.copyInto(it)
-
-                    data.size
-                }
-            } else {
-                println(ok)
-            }
-        }
-    }
-}*/
 
 suspend fun downloadFileWithTCP(coroutineContext: CoroutineContext) {
     val socket =
