@@ -7,7 +7,7 @@ import io.ktor.response.*
 import io.ktor.request.*
 import kotlin.test.*
 import io.ktor.server.testing.*
-import com.astronaut.plugins.*
+//import com.astronaut.plugins.*
 
 class ApplicationTest {
 }

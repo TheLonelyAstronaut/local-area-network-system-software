@@ -1,6 +1,5 @@
 package com.astronaut.server.socket.impl.tcp
 
-import com.astronaut.common.repository.impl.CHUNK_SIZE
 import com.astronaut.server.socket.ClientSocket
 import io.ktor.network.sockets.*
 import io.ktor.utils.io.*
@@ -39,9 +38,5 @@ class TCPClientSocket(
         runCatching {
             raw.close()
         }
-    }
-
-    override suspend fun forceApproval() {
-        //TCP auto handle
     }
 }

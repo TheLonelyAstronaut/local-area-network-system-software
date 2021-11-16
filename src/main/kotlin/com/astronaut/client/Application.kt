@@ -1,16 +1,16 @@
 package com.astronaut.client
 
+import com.astronaut.client.socket.UDPClientSocket
+import com.astronaut.common.repository.impl.CHUNK_SIZE
 import com.astronaut.common.repository.impl.FileRepositoryImpl
+import com.astronaut.common.socket.udp.UDPSocket
 import com.astronaut.common.utils.Events
 import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
 import io.ktor.utils.io.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import java.net.InetSocketAddress
 import java.util.concurrent.Executors
 import kotlin.coroutines.CoroutineContext
@@ -18,39 +18,18 @@ import kotlin.coroutines.CoroutineContext
 val repo = FileRepositoryImpl()
 
 val tcpAddress = InetSocketAddress("192.168.31.143", 2323);
-val udpAddress = InetSocketAddress("192.168.31.143", 2324);
-val local = InetSocketAddress("0.0.0.0", 2528);
+val udpAddress = InetSocketAddress("192.168.31.69", 2324);
+val local = InetSocketAddress("0.0.0.0", 2828);
 val udpUploadContext = CoroutineScope(Executors.newSingleThreadExecutor().asCoroutineDispatcher())
 
 fun main() {
-    runBlocking {
+   runBlocking {
         //downloadFileWithTCP(coroutineContext)
         //downloadFileWithUDP(coroutineContext)
         //uploadWithTCP(coroutineContext)
         uploadWithUDP(coroutineContext)
         //testWindowHandling(coroutineContext)
-    }
-}
-
-suspend fun testWindowHandling(coroutineContext: CoroutineContext) {
-    val socket =
-        aSocket(ActorSelectorManager(coroutineContext))
-            .udp()
-            .connect(
-                remoteAddress = udpAddress,
-            )
-
-    val socketWrapper = UDPClientSocket(socket, udpAddress)
-
-    while (true) {
-        print("Press enter to send TIME event")
-        readLine()
-
-        socketWrapper.sendEvent(Events.TIME)
-        val response = socketWrapper.receiveString()
-
-        println(response)
-    }
+   }
 }
 
 suspend fun downloadFileWithTCP(coroutineContext: CoroutineContext) {
@@ -104,51 +83,53 @@ suspend fun downloadFileWithTCP(coroutineContext: CoroutineContext) {
 }
 
 suspend fun downloadFileWithUDP(coroutineContext: CoroutineContext) {
-    val socket =
-        aSocket(ActorSelectorManager(coroutineContext))
-            .udp()
-            .connect(
-                remoteAddress = udpAddress,
-            )
+    val socket = UDPSocket(mtuBytes = CHUNK_SIZE,
+        windowSizeBytes = CHUNK_SIZE * 100,
+        congestionControlTimeoutMs = 1,
+    )
+
+    socket.bind(local)
 
     val socketWrapper = UDPClientSocket(socket, udpAddress)
 
-    while (true) {
-        print("Enter file name: ")
-        val line = readLine() ?: ""
-        val path = "data/client/$line"
+    CoroutineScope(coroutineContext).launch {
+        launch { socketWrapper.runSuspending() }
 
-        val size = repo.getFileSize(path)
+        while (true) {
+            print("Enter file name: ")
+            val line = readLine() ?: ""
+            val path = "data/client/$line"
 
-        socketWrapper.sendEvent(Events.DOWNLOAD(line, size))
+            val size = repo.getFileSize(path)
 
-        when(val command = socketWrapper.receiveEvent()) {
-            is Events.OK -> {
-                if(size == command.payload && command.payload.toInt() != 0) {
-                    println("Already downloaded!")
+            socketWrapper.sendEvent(Events.DOWNLOAD(line, size))
 
-                    continue
-                }
+            when(val command = socketWrapper.receiveEvent()) {
+                is Events.OK -> {
+                    if(size == command.payload && command.payload.toInt() != 0) {
+                        println("Already downloaded!")
 
-                if(command.payload.toInt() == 0) {
-                    println("No such file on server!")
+                        continue
+                    }
 
-                    continue
-                }
+                    if(command.payload.toInt() == 0) {
+                        println("No such file on server!")
 
-                try {
-                    withContext(udpUploadContext.coroutineContext) {
+                        continue
+                    }
+
+                    try {
                         repo.writeFile(path, command.payload, size) {
                             socketWrapper.receiveByteArray(it)
                         }
+                    } catch (e: Throwable) {
+                        e.printStackTrace()
                     }
-                } catch (e: Throwable) {
-                    e.printStackTrace()
                 }
-            }
-            else -> {
-                println(command)
-                continue
+                else -> {
+                    println(command)
+                    continue
+                }
             }
         }
     }
@@ -211,45 +192,49 @@ suspend fun uploadWithTCP(coroutineContext: CoroutineContext) {
 }
 
 suspend fun uploadWithUDP(coroutineContext: CoroutineContext) {
-    val socket =
-        aSocket(ActorSelectorManager(coroutineContext))
-            .udp()
-            .connect(
-                remoteAddress = udpAddress,
-            )
+    val socket = UDPSocket(mtuBytes = CHUNK_SIZE,
+            windowSizeBytes = CHUNK_SIZE * 100,
+            congestionControlTimeoutMs = 1,
+    )
+
+    socket.bind(local)
 
     val socketWrapper = UDPClientSocket(socket, udpAddress)
 
-    while (true) {
-        print("Enter file name: ")
-        val line = readLine() ?: ""
-        val path = "data/client/$line"
+    CoroutineScope(coroutineContext).launch {
+        launch { socketWrapper.runSuspending() }
 
-        val size = repo.getFileSize(path)
+        while (true) {
+            print("Enter file name: ")
+            val line = readLine() ?: ""
+            val path = "data/client/$line"
 
-        socketWrapper.sendEvent(Events.UPLOAD(line, size))
+            val size = repo.getFileSize(path)
 
-        when(val command = socketWrapper.receiveEvent()) {
-            is Events.OK -> {
-                if(size == command.payload) {
-                    println("Already uploaded!")
-                    socketWrapper.sendEvent(Events.END())
+            socketWrapper.sendEvent(Events.UPLOAD(line, size))
 
+            when (val command = socketWrapper.receiveEvent()) {
+                is Events.OK -> {
+                    if (size == command.payload) {
+                        println("Already uploaded!")
+                        socketWrapper.sendEvent(Events.END())
+
+                        continue
+                    } else {
+                        socketWrapper.sendEvent(Events.START())
+                    }
+
+                    withContext(udpUploadContext.coroutineContext) {
+                        repo.readFile(path, offset = command.payload)
+                            .collect {
+                                socketWrapper.sendByteArray(it.data.clone())
+                            }
+                    }
+                }
+                else -> {
+                    println(command)
                     continue
-                } else {
-                    socketWrapper.sendEvent(Events.START())
                 }
-
-                withContext(udpUploadContext.coroutineContext) {
-                    repo.readFile(path, offset = command.payload)
-                        .collect {
-                            socketWrapper.sendRawByteArray(it.data.clone(), it.isEnd)
-                        }
-                }
-            }
-            else -> {
-                println(command)
-                continue
             }
         }
     }
