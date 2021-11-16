@@ -1,6 +1,7 @@
 package com.astronaut.client
 
 import com.astronaut.common.socket.udp.UDPSocket
+import com.astronaut.common.socket.udp.runSuspending
 import com.astronaut.common.socket.udp.send
 import com.astronaut.common.utils.Events
 import com.astronaut.common.utils.getUnifiedString
@@ -35,5 +36,9 @@ class UDPClientSocket(
 
     suspend fun sendByteArray(data: ByteArray) {
         socket.send(data, address)
+    }
+
+    suspend fun runSuspending() {
+        socket.runSuspending()
     }
 }

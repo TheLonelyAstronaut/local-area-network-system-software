@@ -29,12 +29,13 @@ val udpUploadContext = CoroutineScope(Executors.newSingleThreadExecutor().asCoro
 
 fun main() {
     //downloadFileWithUDP()
-   // runBlocking {
+   runBlocking {
         //downloadFileWithTCP(coroutineContext)
+        downloadFileWithUDP(coroutineContext)
         //uploadWithTCP(coroutineContext)
         //uploadWithUDP(coroutineContext)
         //testWindowHandling(coroutineContext)
-   // }
+   }
 }
 
  /*fun downloadFileWithUDP() {
@@ -129,42 +130,44 @@ suspend fun downloadFileWithUDP(coroutineContext: CoroutineContext) {
 
     val socketWrapper = UDPClientSocket(socket, udpAddress)
 
-    while (true) {
-        print("Enter file name: ")
-        val line = readLine() ?: ""
-        val path = "data/client/$line"
+    CoroutineScope(coroutineContext).launch {
+        launch { socketWrapper.runSuspending() }
 
-        val size = repo.getFileSize(path)
+        while (true) {
+            print("Enter file name: ")
+            val line = readLine() ?: ""
+            val path = "data/client/$line"
 
-        socketWrapper.sendEvent(Events.DOWNLOAD(line, size))
+            val size = repo.getFileSize(path)
 
-        when(val command = socketWrapper.receiveEvent()) {
-            is Events.OK -> {
-                if(size == command.payload && command.payload.toInt() != 0) {
-                    println("Already downloaded!")
+            socketWrapper.sendEvent(Events.DOWNLOAD(line, size))
 
-                    continue
-                }
+            when(val command = socketWrapper.receiveEvent()) {
+                is Events.OK -> {
+                    if(size == command.payload && command.payload.toInt() != 0) {
+                        println("Already downloaded!")
 
-                if(command.payload.toInt() == 0) {
-                    println("No such file on server!")
+                        continue
+                    }
 
-                    continue
-                }
+                    if(command.payload.toInt() == 0) {
+                        println("No such file on server!")
 
-                try {
-                    withContext(udpUploadContext.coroutineContext) {
+                        continue
+                    }
+
+                    try {
                         repo.writeFile(path, command.payload, size) {
                             socketWrapper.receiveByteArray(it)
                         }
+                    } catch (e: Throwable) {
+                        e.printStackTrace()
                     }
-                } catch (e: Throwable) {
-                    e.printStackTrace()
                 }
-            }
-            else -> {
-                println(command)
-                continue
+                else -> {
+                    println(command)
+                    continue
+                }
             }
         }
     }
@@ -257,7 +260,7 @@ suspend fun uploadWithUDP(coroutineContext: CoroutineContext) {
                 withContext(udpUploadContext.coroutineContext) {
                     repo.readFile(path, offset = command.payload)
                         .collect {
-                            socketWrapper.sendRawByteArray(it.data.clone())
+                            socketWrapper.sendByteArray(it.data.clone())
                         }
                 }
             }

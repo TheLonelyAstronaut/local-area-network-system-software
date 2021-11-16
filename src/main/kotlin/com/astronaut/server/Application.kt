@@ -19,18 +19,21 @@ import kotlinx.coroutines.runBlocking
 import java.net.InetSocketAddress
 import java.util.concurrent.Executors
 
-val local = InetSocketAddress("0.0.0.0", 2324);
-val repo = FileRepositoryImpl()
-
 fun main() {
-    /*DIRoot.getConfigInstance().configure(
+    DIRoot.getConfigInstance().configure(
         protocol = ServerProtocol.TCP,
         isMultithreaded = false,
         isSynchronous = true,
     )
 
-    DIRoot.getServerInstance().start()*/
-    val socket = UDPSocket(mtuBytes = CHUNK_SIZE, windowSizeBytes = CHUNK_SIZE * 100, congestionControlTimeoutMs = 1)
+    DIRoot.getServerInstance().start()
+}
+
+/*
+val local = InetSocketAddress("0.0.0.0", 2324);
+val repo = FileRepositoryImpl()
+
+val socket = UDPSocket(mtuBytes = CHUNK_SIZE, windowSizeBytes = CHUNK_SIZE * 100, congestionControlTimeoutMs = 1)
     socket.bind(local)
     val context = Executors.newCachedThreadPool().asCoroutineDispatcher()
 
@@ -53,4 +56,4 @@ fun main() {
             }
         }
     }
-}
+ */
