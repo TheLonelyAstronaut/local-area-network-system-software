@@ -1,20 +1,21 @@
 package com.astronaut.client
 
+import com.astronaut.common.repository.impl.CHUNK_SIZE
 import com.astronaut.common.repository.impl.FileRepositoryImpl
 import com.astronaut.common.socket.udp.UDPSocket
 import com.astronaut.common.socket.udp.runSuspending
 import com.astronaut.common.socket.udp.send
 import com.astronaut.common.utils.Events
+import com.astronaut.common.utils.getUnifiedString
+import com.astronaut.common.utils.toByteArray
+import com.astronaut.common.utils.toEvent
 import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
 import io.ktor.util.*
 import io.ktor.utils.io.*
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.asCoroutineDispatcher
+import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.onCompletion
-import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withContext
 import java.net.InetSocketAddress
 import java.util.concurrent.Executors
 import kotlin.coroutines.CoroutineContext
@@ -22,40 +23,51 @@ import kotlin.coroutines.CoroutineContext
 val repo = FileRepositoryImpl()
 
 val tcpAddress = InetSocketAddress("192.168.31.143", 2323);
-val udpAddress = InetSocketAddress("192.168.31.143", 2324);
-val local = InetSocketAddress("0.0.0.0", 2528);
+val udpAddress = InetSocketAddress("192.168.31.30", 2324);
+val local = InetSocketAddress("0.0.0.0", 2828);
 val udpUploadContext = CoroutineScope(Executors.newSingleThreadExecutor().asCoroutineDispatcher())
 
 fun main() {
-    runBlocking {
+    downloadFileWithUDP()
+   // runBlocking {
         //downloadFileWithTCP(coroutineContext)
-        downloadFileWithUDP(coroutineContext)
         //uploadWithTCP(coroutineContext)
         //uploadWithUDP(coroutineContext)
         //testWindowHandling(coroutineContext)
-    }
+   // }
 }
 
-suspend fun downloadFileWithUDP(coroutineContext: CoroutineContext) {
-    val socket = UDPSocket()
+ fun downloadFileWithUDP() {
+    val socket = UDPSocket(mtuBytes = CHUNK_SIZE,
+        windowSizeBytes = CHUNK_SIZE * 100,
+        congestionControlTimeoutMs = 1,
+    )
     socket.bind(local)
+    val context = Executors.newCachedThreadPool().asCoroutineDispatcher()
 
-    withContext(coroutineContext) {
-        socket.runSuspending()
-    }
+    CoroutineScope(context).launch {
+        launch { socket.runSuspending() }
 
-    while (true) {
-        print("Enter file name: ")
-        val line = readLine() ?: ""
-        val path = "data/client/$line"
-        val size = repo.getFileSize(path)
+        while (true) {
+            print("Enter file name: ")
+            val line = readLine() ?: ""
+            val path = "data/client/$line"
+            val size = repo.getFileSize(path)
 
-        socket.send(Events.DOWNLOAD(line, size).toString().toByteArray(), udpAddress)
+            socket.send(Events.DOWNLOAD(line, size).toString().toByteArray(), udpAddress)
+            val ok = socket.receive().data.toByteArray().getUnifiedString().toEvent()
 
-        /*repo.writeFile(path, 0, size) {
-            socket.receive().data.array().copyInto(it)
-            it.lastIndex + 1
-        }*/
+            if(ok is Events.OK) {
+                repo.writeFile(path, ok.payload, size) {
+                    val data = socket.receive().data.toByteArray()
+                    data.copyInto(it)
+
+                    data.size
+                }
+            } else {
+                println(ok)
+            }
+        }
     }
 }
 

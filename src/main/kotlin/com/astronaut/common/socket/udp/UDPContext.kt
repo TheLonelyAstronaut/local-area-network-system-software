@@ -1,7 +1,7 @@
 package com.astronaut.common.socket.udp
 
+import com.astronaut.common.utils.wirehair.Wirehair
 import kotlinx.coroutines.CancellableContinuation
-import net.joinu.wirehair.Wirehair
 import sun.nio.ch.DirectBuffer
 import java.nio.ByteBuffer
 import java.util.*

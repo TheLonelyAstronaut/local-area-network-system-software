@@ -1,10 +1,10 @@
 package com.astronaut.common.socket.udp
 
+import com.astronaut.common.utils.wirehair.Wirehair
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.suspendCancellableCoroutine
 import mu.KotlinLogging
-import net.joinu.wirehair.Wirehair
 import java.net.InetSocketAddress
 import java.nio.ByteBuffer
 import java.nio.channels.DatagramChannel
@@ -31,6 +31,7 @@ class UDPSocket(
         var count = 0
 
         init {
+            println()
             Wirehair.init()
         }
     }
@@ -102,7 +103,7 @@ class UDPSocket(
             } // TODO: get from CC
             .forEach { (blocks, to) ->
                 blocks.forEach { block ->
-                    logger.trace { "Sending REPAIR_BLOCK threadId: ${block.threadId} blockId: ${block.blockId}" }
+                    //logger.trace { "Sending REPAIR_BLOCK threadId: ${block.threadId} blockId: ${block.blockId}" }
                     block.serialize(sendBuffer)
                     write(sendBuffer, to)
                 }
@@ -121,7 +122,7 @@ class UDPSocket(
         sendQueueCopy.forEach { (packet, future) ->
             val threadId = UUID.randomUUID()
 
-            logger.trace { "Transmission for threadId: $threadId is started" }
+            //logger.trace { "Transmission for threadId: $threadId is started" }
 
             contextManager.createOrGetSendContext(threadId, packet, repairBlockSizeBytes, future)
         }
@@ -148,10 +149,10 @@ class UDPSocket(
 
                     context.ackReceived = true
 
-                    logger.trace { "Received ACK for threadId: ${ack.threadId}, stopping..." }
+                    //logger.trace { "Received ACK for threadId: ${ack.threadId}, stopping..." }
 
                     context.continuation.resume(context) {
-                        logger.warn { "Send for ${ack.threadId} was already canceled" }
+                        //.warn { "Send for ${ack.threadId} was already canceled" }
                     }
 
                     contextManager.destroySendContext(context.threadId)
@@ -161,7 +162,7 @@ class UDPSocket(
                 Flags.BLOCK_ACK -> {
                     val blockAck = parseBlockAck(packet.data)
 
-                    logger.trace { "Received BLOCK_ACK message for threadId: ${blockAck.threadId} from: ${packet.address}" }
+                   // logger.trace { "Received BLOCK_ACK message for threadId: ${blockAck.threadId} from: ${packet.address}" }
 
                     /* TODO: handle congestion control tune */
 
@@ -170,7 +171,7 @@ class UDPSocket(
                 Flags.REPAIR -> {
                     val block = parseRepairBlock(packet.data)
 
-                    logger.trace { "Received REPAIR_BLOCK message for threadId: ${block.threadId} blockId: ${block.blockId} from: ${packet.address}" }
+                   // logger.trace { "Received REPAIR_BLOCK message for threadId: ${block.threadId} blockId: ${block.blockId} from: ${packet.address}" }
 
                     block to packet.address
                 }
@@ -184,7 +185,7 @@ class UDPSocket(
             val threadId = block.threadId
 
             val context = if (contextManager.isReceiveContextFinished(block.threadId)) {
-                logger.trace { "Received a repair block for already received threadId: ${block.threadId}, skipping..." }
+               // logger.trace { "Received a repair block for already received threadId: ${block.threadId}, skipping..." }
                 sendAck(threadId, from)
                 return@forEach
             } else {
@@ -207,7 +208,7 @@ class UDPSocket(
     }
 
     private fun sendAck(threadId: UUID, to: InetSocketAddress) {
-        logger.trace { "Sending ACK for threadId: $threadId to $to" }
+       // logger.trace { "Sending ACK for threadId: $threadId to $to" }
 
         val ack = Ack(threadId, 0F) // TODO: get from congestion index
 
@@ -217,7 +218,7 @@ class UDPSocket(
     }
 
     private fun sendBlockAck(threadId: UUID, blockId: Int, to: InetSocketAddress) {
-        logger.trace { "Sending BLOCK_ACK for threadId: $threadId to $to" }
+       // logger.trace { "Sending BLOCK_ACK for threadId: $threadId to $to" }
 
         val blockAck = BlockAck(threadId, blockId, 0F) // TODO: get from congestion index
 
@@ -278,7 +279,7 @@ class UDPSocket(
     fun isClosed() = state == SocketState.CLOSED
 
     private fun write(data: ByteBuffer, address: InetSocketAddress) = synchronized(state) {
-        logger.trace { "Sending ${data.limit()} bytes to $address" }
+       // logger.trace { "Sending ${data.limit()} bytes to $address" }
         throwIfClosed()
         channel.send(data, address)
 
@@ -295,7 +296,7 @@ class UDPSocket(
 
         receiveBuffer.flip()
 
-        logger.trace { "Receiving $size bytes from $remoteAddress" }
+       // logger.trace { "Receiving $size bytes from $remoteAddress" }
 
         val data = ByteBuffer.allocate(size)
 

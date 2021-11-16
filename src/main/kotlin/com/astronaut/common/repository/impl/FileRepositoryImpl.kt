@@ -13,7 +13,7 @@ import java.nio.file.Paths
 import java.util.*
 
 
-const val CHUNK_SIZE = 8096 //1024
+const val CHUNK_SIZE = 16192 //1024
 const val DELIMITER = Events.END.STRINGIFIED.toString()
 val DELIMITER_ENCODED = DELIMITER.encodeToByteArray()
 

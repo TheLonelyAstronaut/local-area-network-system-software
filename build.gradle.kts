@@ -14,6 +14,7 @@ plugins {
 
 group = "com.astronaut"
 version = "0.0.1"
+
 application {
     mainClass.set("com.astronaut.ApplicationKt")
 }
@@ -30,6 +31,7 @@ dependencies {
     testImplementation("io.ktor:ktor-server-tests:$ktor_version")
     testImplementation("org.jetbrains.kotlin:kotlin-test:$kotlin_version")
     implementation("org.kodein.di:kodein-di:$kodein_version")
-    implementation("com.github.seniorjoinu:wirehair-wrapper:$wirehair_wrapper_version")
     implementation("io.github.microutils:kotlin-logging-jvm:$kotlin_logging_version")
+    implementation("net.java.dev.jna:jna:5.2.0")
+    implementation("net.java.dev.jna:jna-platform:5.2.0")
 }
