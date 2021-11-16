@@ -1,9 +1,13 @@
 package com.astronaut.client
 
 import com.astronaut.common.repository.impl.FileRepositoryImpl
+import com.astronaut.common.socket.udp.UDPSocket
+import com.astronaut.common.socket.udp.runSuspending
+import com.astronaut.common.socket.udp.send
 import com.astronaut.common.utils.Events
 import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
+import io.ktor.util.*
 import io.ktor.utils.io.*
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -29,6 +33,29 @@ fun main() {
         //uploadWithTCP(coroutineContext)
         //uploadWithUDP(coroutineContext)
         //testWindowHandling(coroutineContext)
+    }
+}
+
+suspend fun downloadFileWithUDP(coroutineContext: CoroutineContext) {
+    val socket = UDPSocket()
+    socket.bind(local)
+
+    withContext(coroutineContext) {
+        socket.runSuspending()
+    }
+
+    while (true) {
+        print("Enter file name: ")
+        val line = readLine() ?: ""
+        val path = "data/client/$line"
+        val size = repo.getFileSize(path)
+
+        socket.send(Events.DOWNLOAD(line, size).toString().toByteArray(), udpAddress)
+
+        /*repo.writeFile(path, 0, size) {
+            socket.receive().data.array().copyInto(it)
+            it.lastIndex + 1
+        }*/
     }
 }
 
@@ -104,7 +131,7 @@ suspend fun downloadFileWithTCP(coroutineContext: CoroutineContext) {
     }
 }
 
-suspend fun downloadFileWithUDP(coroutineContext: CoroutineContext) {
+/*suspend fun downloadFileWithUDP(coroutineContext: CoroutineContext) {
     val socket =
         aSocket(ActorSelectorManager(coroutineContext))
             .udp()
@@ -154,7 +181,7 @@ suspend fun downloadFileWithUDP(coroutineContext: CoroutineContext) {
             }
         }
     }
-}
+}*/
 
 suspend fun uploadWithTCP(coroutineContext: CoroutineContext) {
     val socket =

@@ -1,7 +1,11 @@
+import java.net.URI
+
 val ktor_version: String by project
 val kotlin_version: String by project
 val logback_version: String by project
 val kodein_version: String by project
+val wirehair_wrapper_version: String by project
+val kotlin_logging_version: String by project
 
 plugins {
     application
@@ -16,6 +20,7 @@ application {
 
 repositories {
     mavenCentral()
+    maven { url = URI("https://jitpack.io") }
 }
 
 dependencies {
@@ -25,4 +30,6 @@ dependencies {
     testImplementation("io.ktor:ktor-server-tests:$ktor_version")
     testImplementation("org.jetbrains.kotlin:kotlin-test:$kotlin_version")
     implementation("org.kodein.di:kodein-di:$kodein_version")
+    implementation("com.github.seniorjoinu:wirehair-wrapper:$wirehair_wrapper_version")
+    implementation("io.github.microutils:kotlin-logging-jvm:$kotlin_logging_version")
 }
