@@ -28,7 +28,7 @@ val local = InetSocketAddress("0.0.0.0", 2828);
 val udpUploadContext = CoroutineScope(Executors.newSingleThreadExecutor().asCoroutineDispatcher())
 
 fun main() {
-    downloadFileWithUDP()
+    //downloadFileWithUDP()
    // runBlocking {
         //downloadFileWithTCP(coroutineContext)
         //uploadWithTCP(coroutineContext)
@@ -37,7 +37,7 @@ fun main() {
    // }
 }
 
- fun downloadFileWithUDP() {
+ /*fun downloadFileWithUDP() {
     val socket = UDPSocket(mtuBytes = CHUNK_SIZE,
         windowSizeBytes = CHUNK_SIZE * 100,
         congestionControlTimeoutMs = 1,
@@ -69,29 +69,7 @@ fun main() {
             }
         }
     }
-}
-
-suspend fun testWindowHandling(coroutineContext: CoroutineContext) {
-    val socket =
-        aSocket(ActorSelectorManager(coroutineContext))
-            .udp()
-            .connect(
-                remoteAddress = udpAddress,
-                localAddress = local
-            )
-
-    val socketWrapper = UDPClientSocket(socket, udpAddress)
-
-    while (true) {
-        print("Press enter to send TIME event")
-        readLine()
-
-        socketWrapper.sendEvent(Events.TIME)
-        val response = socketWrapper.receiveString()
-
-        println(response)
-    }
-}
+}*/
 
 suspend fun downloadFileWithTCP(coroutineContext: CoroutineContext) {
     val socket =
@@ -143,14 +121,11 @@ suspend fun downloadFileWithTCP(coroutineContext: CoroutineContext) {
     }
 }
 
-/*suspend fun downloadFileWithUDP(coroutineContext: CoroutineContext) {
-    val socket =
-        aSocket(ActorSelectorManager(coroutineContext))
-            .udp()
-            .connect(
-                remoteAddress = udpAddress,
-                localAddress = local
-            )
+suspend fun downloadFileWithUDP(coroutineContext: CoroutineContext) {
+    val socket = UDPSocket(mtuBytes = CHUNK_SIZE,
+        windowSizeBytes = CHUNK_SIZE * 100,
+        congestionControlTimeoutMs = 1,
+    )
 
     val socketWrapper = UDPClientSocket(socket, udpAddress)
 
@@ -193,7 +168,7 @@ suspend fun downloadFileWithTCP(coroutineContext: CoroutineContext) {
             }
         }
     }
-}*/
+}
 
 suspend fun uploadWithTCP(coroutineContext: CoroutineContext) {
     val socket =
@@ -252,13 +227,10 @@ suspend fun uploadWithTCP(coroutineContext: CoroutineContext) {
 }
 
 suspend fun uploadWithUDP(coroutineContext: CoroutineContext) {
-    val socket =
-        aSocket(ActorSelectorManager(coroutineContext))
-            .udp()
-            .connect(
-                remoteAddress = udpAddress,
-                localAddress = local
-            )
+    val socket = UDPSocket(mtuBytes = CHUNK_SIZE,
+            windowSizeBytes = CHUNK_SIZE * 100,
+            congestionControlTimeoutMs = 1,
+    )
 
     val socketWrapper = UDPClientSocket(socket, udpAddress)
 
@@ -285,7 +257,7 @@ suspend fun uploadWithUDP(coroutineContext: CoroutineContext) {
                 withContext(udpUploadContext.coroutineContext) {
                     repo.readFile(path, offset = command.payload)
                         .collect {
-                            socketWrapper.sendRawByteArray(it.data.clone(), it.isEnd)
+                            socketWrapper.sendRawByteArray(it.data.clone())
                         }
                 }
             }

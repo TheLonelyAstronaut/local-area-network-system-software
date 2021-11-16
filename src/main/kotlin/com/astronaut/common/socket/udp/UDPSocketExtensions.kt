@@ -1,6 +1,8 @@
 package com.astronaut.common.socket.udp
 
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.isActive
 import java.net.InetSocketAddress
 import java.nio.ByteBuffer
@@ -32,4 +34,15 @@ suspend fun UDPSocket.send(data: ByteArray, to: InetSocketAddress): UDPSendConte
     buffer.flip()
 
     return send(buffer, to)
+}
+
+suspend fun UDPSocket.listenForNewPackages(): Flow<QueuedDatagramPacket> {
+    val socket = this
+
+    return flow {
+        while (coroutineContext.isActive) {
+            emit(socket.receive())
+            delay(1)
+        }
+    }
 }

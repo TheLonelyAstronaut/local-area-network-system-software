@@ -1,7 +1,10 @@
 package com.astronaut.server.socket.impl.udp
 
+import com.astronaut.common.socket.udp.QueuedDatagramPacket
+import com.astronaut.common.utils.toByteArray
 import io.ktor.network.sockets.*
 import kotlinx.coroutines.delay
+import java.net.InetSocketAddress
 import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
 
@@ -9,18 +12,17 @@ class UDPClientsPool {
     private val users: MutableMap<String, UDPClientSocket> = mutableMapOf()
     private val newUsers: MutableMap<String, UDPClientSocket> = mutableMapOf()
 
-    private lateinit var sendDelegate: suspend (data: Datagram) -> Unit
+    private lateinit var sendDelegate: suspend (ByteArray, InetSocketAddress) -> Unit
 
-    fun addOrUpdateClient(data: Datagram) {
+    fun addOrUpdateClient(data: QueuedDatagramPacket) {
         if(users.contains(data.address.toString())) {
-            users.getValue(data.address.toString()).setReadData(data.packet)
+            users.getValue(data.address.toString()).setReadData(data.data.toByteArray())
         } else {
             val connection = UDPClientSocket(
                 data.address,
-                data.packet,
+                data.data.toByteArray(),
                 sendDelegate
             ) {
-                data.packet.close()
                 users.remove(data.address.toString())
             }
 
@@ -43,7 +45,7 @@ class UDPClientsPool {
         return udp
     }
 
-    fun setSendDelegate(delegate: suspend (data: Datagram) -> Unit) {
+    fun setSendDelegate(delegate: suspend (ByteArray, InetSocketAddress) -> Unit) {
         sendDelegate = delegate
     }
 }

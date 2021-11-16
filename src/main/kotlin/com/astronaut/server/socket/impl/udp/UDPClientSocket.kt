@@ -1,8 +1,10 @@
 package com.astronaut.server.socket.impl.udp
 
 import com.astronaut.common.utils.WindowingHandler
+import com.astronaut.common.utils.getUnifiedString
 import com.astronaut.server.socket.ClientSocket
 import io.ktor.network.sockets.*
+import io.ktor.util.collections.*
 import io.ktor.util.network.*
 import io.ktor.utils.io.core.*
 import kotlinx.coroutines.CoroutineScope
@@ -10,23 +12,31 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.withTimeout
 import kotlinx.coroutines.withTimeoutOrNull
+import java.net.InetSocketAddress
+import java.nio.ByteBuffer
 import kotlin.coroutines.coroutineContext
 
 class UDPClientSocket(
-    private val address: NetworkAddress,
-    private var readData: ByteReadPacket?,
-    private val onWrite: suspend (data: Datagram) -> Unit,
+    private val address: InetSocketAddress,
+    readData: ByteArray?,
+    private val onWrite: suspend (ByteArray, InetSocketAddress) -> Unit,
     private val onClose: () -> Unit,
-): ClientSocket, WindowingHandler() {
+): ClientSocket {
 
     private var isActive: Boolean = true
     private val mutex = Mutex()
-    private var isTimeoutEnabled = true
+    private val inputBuffer = ConcurrentList<ByteArray>()
+
+    init {
+        readData?.let {
+            inputBuffer.add(it)
+        }
+    }
 
     private suspend fun waitBeforeRead() {
         try {
             // If data to read is null - lock until it will be unlocked in setReadData method
-            if(readData == null) {
+            if(inputBuffer.size == 0) {
                 if(!isActive) {
                     return
                 }
@@ -51,63 +61,38 @@ class UDPClientSocket(
         }
     }
 
-    override suspend fun sendByteArray(byteArray: ByteArray) {
-        internalWriteByteArray(byteArray)
-    }
-
-    override suspend fun receiveByteReadPacket(): ByteReadPacket {
-        if(isTimeoutEnabled) {
-            var result = withTimeoutOrNull(5) {
-                internalReadByteArray()
-            }
-
-            if(result == null) {
-                result = ByteReadPacket(byteArrayOf())
-            }
-
-            return result
-        } else {
-            return internalReadByteArray()
-        }
-    }
-
-    private suspend fun internalReadByteArray(): ByteReadPacket {
+    private suspend fun internalReadByteArray(): ByteArray {
         waitBeforeRead()
 
-        if(!isActive && readData == null) {
-            return ByteReadPacket(byteArrayOf())
+        if(!isActive && inputBuffer.size == 0) {
+            return byteArrayOf()
         }
 
-        val copy = readData?.copy() ?: ByteReadPacket(byteArrayOf())
-        readData = null
-
-        return copy
+        return inputBuffer.removeAt(0)
     }
 
     private suspend fun internalWriteByteArray(data: ByteArray) {
-        onWrite(Datagram(ByteReadPacket(data), address))
+        onWrite(data, address)
     }
 
-    override suspend fun readString(): String? {
-        isTimeoutEnabled = false
-        val data = receive()
-        isTimeoutEnabled = true
+    override suspend fun readString(): String {
+        val data = internalReadByteArray()
 
-        return String(data)
+        return data.getUnifiedString()
     }
 
     override suspend fun readByteArray(data: ByteArray): Int? {
-        receive().copyInto(data)
+        internalReadByteArray().copyInto(data)
 
         return data.size
     }
 
     override suspend fun writeString(data: String) {
-        send(data.encodeToByteArray())
+        internalWriteByteArray(data.encodeToByteArray())
     }
 
     override suspend fun writeByteArray(data: ByteArray) {
-        send(data)
+        internalWriteByteArray(data)
     }
 
     override suspend fun close() {
@@ -116,12 +101,8 @@ class UDPClientSocket(
         onClose()
     }
 
-    override suspend fun forceApproval() {
-        sendApproval()
-    }
-
-    fun setReadData(data: ByteReadPacket) {
-        readData = data
+    fun setReadData(data: ByteArray) {
+        inputBuffer.add(data)
 
         try {
             if(mutex.isLocked) mutex.unlock()

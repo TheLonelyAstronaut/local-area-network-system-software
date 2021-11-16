@@ -13,7 +13,6 @@ interface WirehairLib : Library {
         var INSTANCE: WirehairLib
 
         init {
-            println(System.getProperty("user.dir"))
             val libFile = Native.extractFromResourcePath(LIBRARY_NAME)
 
             INSTANCE = Native.load(libFile.absolutePath, WirehairLib::class.java)

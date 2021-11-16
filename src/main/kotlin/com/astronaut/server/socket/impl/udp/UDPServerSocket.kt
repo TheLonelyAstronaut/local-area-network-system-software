@@ -1,16 +1,16 @@
 package com.astronaut.server.socket.impl.udp
 
+import com.astronaut.common.socket.udp.UDPSocket
+import com.astronaut.common.socket.udp.listenForNewPackages
+import com.astronaut.common.socket.udp.runSuspending
+import com.astronaut.common.socket.udp.send
 import com.astronaut.server.socket.ClientSocket
 import com.astronaut.server.socket.ServerSocket
 import io.ktor.network.selector.*
 import io.ktor.network.sockets.*
 import kotlinx.coroutines.*
-import kotlinx.coroutines.channels.consume
 import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.receiveAsFlow
 import java.net.InetSocketAddress
-import kotlin.time.Duration
-import kotlin.time.ExperimentalTime
 
 class UDPServerSocket(
     appScope: CoroutineScope,
@@ -18,19 +18,20 @@ class UDPServerSocket(
     hostname: String,
     port: Int
 ): ServerSocket {
-    private val socket: BoundDatagramSocket =
-        aSocket(ActorSelectorManager(appScope.coroutineContext))
-            .udp()
-            .bind(InetSocketAddress(hostname, port))
+    private val socket: UDPSocket = UDPSocket()
 
     init {
+        socket.bind(InetSocketAddress(hostname, port))
+
         appScope.launch {
-            pool.setSendDelegate {
-                socket.outgoing.send(it)
+            pool.setSendDelegate { data, address ->
+                socket.send(data, address)
             }
 
-            socket.incoming.consume {
-                this.receiveAsFlow()
+            launch { socket.runSuspending() }
+
+            launch {
+                socket.listenForNewPackages()
                     .collect {
                         pool.addOrUpdateClient(it)
                     }
