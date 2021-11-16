@@ -5,8 +5,8 @@ import com.astronaut.server.utils.ServerProtocol
 
 fun main() {
     DIRoot.getConfigInstance().configure(
-        protocol = ServerProtocol.UDP,
-        isMultithreaded = false,
+        protocol = ServerProtocol.TCP,
+        isMultithreaded = true,
         isSynchronous = false,
     )
 

@@ -25,7 +25,7 @@ class TCPClientSocket(
     }
 
     override suspend fun writeString(data: String) {
-        val bytes = (data + "\r\n").encodeToByteArray()
+        val bytes = (data).encodeToByteArray()
         writeChannel.writeFully(bytes)
     }
 

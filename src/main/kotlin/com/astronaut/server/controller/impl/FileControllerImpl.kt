@@ -68,7 +68,7 @@ class FileControllerImpl(
                 //accumulator += it.size // <-- Uncomment this to test connection interruption
 
                 if(accumulator <= 2000000) {
-                    socket.writeByteArray(it.data)
+                    socket.writeByteArray(it.data.clone())
                 }
             }
     }
