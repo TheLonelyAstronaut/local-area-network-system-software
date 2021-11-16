@@ -1,4 +1,4 @@
-package com.astronaut.client
+package com.astronaut.client.socket
 
 import com.astronaut.common.socket.udp.UDPSocket
 import com.astronaut.common.socket.udp.runSuspending

@@ -1,5 +1,6 @@
 package com.astronaut.server.socket.impl.udp
 
+import com.astronaut.common.repository.impl.CHUNK_SIZE
 import com.astronaut.common.socket.udp.UDPSocket
 import com.astronaut.common.socket.udp.listenForNewPackages
 import com.astronaut.common.socket.udp.runSuspending
@@ -18,7 +19,10 @@ class UDPServerSocket(
     hostname: String,
     port: Int
 ): ServerSocket {
-    private val socket: UDPSocket = UDPSocket()
+    private val socket: UDPSocket = UDPSocket(mtuBytes = CHUNK_SIZE,
+        windowSizeBytes = CHUNK_SIZE * 100,
+        congestionControlTimeoutMs = 1,
+    )
 
     init {
         socket.bind(InetSocketAddress(hostname, port))

@@ -35,10 +35,6 @@ class FileControllerImpl(
         fileService.writeFile(path, event.size, size) {
             socket.readByteArray(it) ?: -1
         }
-
-        socket.forceApproval()
-
-        compare(event.filename)
     }
 
     override suspend fun download(socket: ClientSocket, event: Events.DOWNLOAD) {
