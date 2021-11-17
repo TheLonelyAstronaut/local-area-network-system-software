@@ -10,16 +10,16 @@ class BaseControllerImpl: BaseController {
     override suspend fun resolve(socket: ClientSocket, event: Events) {
         when(event) {
             is Events.ECHO -> {
-                socket.writeString("${event.string}\n")
+                socket.writeString("${event.string}\r\n")
             }
             is Events.TIME -> {
-                socket.writeString("${SimpleDateFormat("dd/M/yyyy hh:mm:ss").format(Date())}\n")
+                socket.writeString("${SimpleDateFormat("dd/M/yyyy hh:mm:ss").format(Date())}\r\n")
             }
             is Events.CLOSE -> {
                 socket.close()
             }
             else -> {
-                socket.writeString("Unknown command $event\n")
+                socket.writeString("Unknown command $event\r\n")
             }
         }
     }
