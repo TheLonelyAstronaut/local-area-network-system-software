@@ -112,8 +112,6 @@ class FileRepositoryImpl: FileRepository {
                     }
 
                 } while (actualSize != -1)
-
-                //emit(DELIMITER_ENCODED)
             }
         }
 

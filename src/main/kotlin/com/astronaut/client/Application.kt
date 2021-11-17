@@ -17,55 +17,19 @@ import kotlin.coroutines.CoroutineContext
 
 val repo = FileRepositoryImpl()
 
-val tcpAddress = InetSocketAddress("192.168.31.143", 2323);
-val udpAddress = InetSocketAddress("192.168.31.69", 2324);
+val tcpAddress = InetSocketAddress("192.168.31.30", 2323);
+val udpAddress = InetSocketAddress("192.168.31.30", 2324);
 val local = InetSocketAddress("0.0.0.0", 2828);
 val udpUploadContext = CoroutineScope(Executors.newSingleThreadExecutor().asCoroutineDispatcher())
 
 fun main() {
-    //downloadFileWithUDP()
-   runBlocking {
+    runBlocking {
         //downloadFileWithTCP(coroutineContext)
         //downloadFileWithUDP(coroutineContext)
         //uploadWithTCP(coroutineContext)
         uploadWithUDP(coroutineContext)
-        //testWindowHandling(coroutineContext)
-   }
-}
-
- /*fun downloadFileWithUDP() {
-    val socket = UDPSocket(mtuBytes = CHUNK_SIZE,
-        windowSizeBytes = CHUNK_SIZE * 100,
-        congestionControlTimeoutMs = 1,
-    )
-    socket.bind(local)
-    val context = Executors.newCachedThreadPool().asCoroutineDispatcher()
-
-    CoroutineScope(context).launch {
-        launch { socket.runSuspending() }
-
-        while (true) {
-            print("Enter file name: ")
-            val line = readLine() ?: ""
-            val path = "data/client/$line"
-            val size = repo.getFileSize(path)
-
-            socket.send(Events.DOWNLOAD(line, size).toString().toByteArray(), udpAddress)
-            val ok = socket.receive().data.toByteArray().getUnifiedString().toEvent()
-
-            if(ok is Events.OK) {
-                repo.writeFile(path, ok.payload, size) {
-                    val data = socket.receive().data.toByteArray()
-                    data.copyInto(it)
-
-                    data.size
-                }
-            } else {
-                println(ok)
-            }
-        }
     }
-}*/
+}
 
 suspend fun downloadFileWithTCP(coroutineContext: CoroutineContext) {
     val socket =
@@ -203,19 +167,10 @@ suspend fun uploadWithTCP(coroutineContext: CoroutineContext) {
                     writeChannel.writeAvailable(Events.START().toString().encodeToByteArray())
                 }
 
-                var accumulator = 0;
 
                 repo.readFile(path, offset = command.payload)
-                    .onCompletion {
-                        //socket.close() // <-- Uncomment this to test connection interruption
-                        println(accumulator)
-                    }
                     .collect {
-                        //accumulator += it.size // <-- Uncomment this to test connection interruption
-
-                        if(accumulator <= 2000000) {
-                           writeChannel.writeFully(it.data)
-                        }
+                        writeChannel.writeFully(it.data)
                     }
             }
             else -> {
