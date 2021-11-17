@@ -17,19 +17,18 @@ import kotlin.coroutines.CoroutineContext
 
 val repo = FileRepositoryImpl()
 
-val tcpAddress = InetSocketAddress("192.168.31.143", 2323);
-val udpAddress = InetSocketAddress("192.168.31.69", 2324);
+val tcpAddress = InetSocketAddress("192.168.31.30", 2323);
+val udpAddress = InetSocketAddress("192.168.31.30", 2324);
 val local = InetSocketAddress("0.0.0.0", 2828);
 val udpUploadContext = CoroutineScope(Executors.newSingleThreadExecutor().asCoroutineDispatcher())
 
 fun main() {
-   runBlocking {
+    runBlocking {
         //downloadFileWithTCP(coroutineContext)
         //downloadFileWithUDP(coroutineContext)
         //uploadWithTCP(coroutineContext)
         uploadWithUDP(coroutineContext)
-        //testWindowHandling(coroutineContext)
-   }
+    }
 }
 
 suspend fun downloadFileWithTCP(coroutineContext: CoroutineContext) {
@@ -168,19 +167,10 @@ suspend fun uploadWithTCP(coroutineContext: CoroutineContext) {
                     writeChannel.writeAvailable(Events.START().toString().encodeToByteArray())
                 }
 
-                var accumulator = 0;
 
                 repo.readFile(path, offset = command.payload)
-                    .onCompletion {
-                        //socket.close() // <-- Uncomment this to test connection interruption
-                        println(accumulator)
-                    }
                     .collect {
-                        //accumulator += it.size // <-- Uncomment this to test connection interruption
-
-                        if(accumulator <= 2000000) {
-                           writeChannel.writeFully(it.data)
-                        }
+                        writeChannel.writeFully(it.data)
                     }
             }
             else -> {

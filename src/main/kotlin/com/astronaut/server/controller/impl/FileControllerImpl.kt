@@ -49,68 +49,12 @@ class FileControllerImpl(
             return
         }
 
-        var accumulator = 0;
-
         fileService.readFile(path, event.size)
             .catch {
                 socket.writeString(Events.ERROR("No such file: ${event.filename}").toString())
             }
-            .onCompletion {
-                //socket.close() // <-- Uncomment this to test connection interruption
-                //println(accumulator)
-                compare(event.filename)
-            }
             .collect {
-                //accumulator += it.size // <-- Uncomment this to test connection interruption
-
-                if(accumulator <= 2000000) {
-                    socket.writeByteArray(it.data.clone())
-                }
+                socket.writeByteArray(it.data)
             }
-    }
-
-    private suspend fun compare(path: String) {
-        val path1 = "data/server/${path}"
-        val path2 = "data/client/${path}"
-
-        val size1 = fileService.getFileSize(path1)
-        val size2 = fileService.getFileSize(path2)
-
-        val firstFile: MutableList<ByteArray> = mutableListOf()
-        val secondFile: MutableList<ByteArray> = mutableListOf()
-
-        fileService.readFile(path1, 0)
-            .collect {
-                firstFile.add(it.data.clone())
-            }
-
-        fileService.readFile(path2, 0)
-            .collect {
-                secondFile.add(it.data.clone())
-            }
-
-        println("TESTING")
-        println("Size equals: ${size1 == size2}")
-        println("List sizes equals: ${firstFile.size} ${secondFile.size}")
-        println("Cluster compare:")
-
-        for(i in firstFile.indices) {
-            val firstCluster = firstFile[i]
-            val secondCluster = secondFile[i]
-            var isEqual = true
-
-            for(j in firstCluster.indices) {
-                if(firstCluster[j] != secondCluster[j]) {
-                    isEqual = false
-                    break
-                }
-            }
-
-            if(!isEqual) {
-                println("Difference in cluster N${i}")
-            }
-        }
-
-        println("Done!")
     }
 }

@@ -75,6 +75,7 @@ class ServerImpl(
                     is Events.TIME,
                     is Events.CLOSE -> {
                         baseController.resolve(socket, event)
+                        break;
                     }
                     is Events.DOWNLOAD -> {
                         fileController.download(socket, event)
